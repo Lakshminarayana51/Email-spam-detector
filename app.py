@@ -5,7 +5,7 @@ import csv
 import io
 import imaplib
 from collections import deque
-from typing import Dict, Any
+from typing import Dict, Any, List
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, Response
 
@@ -29,6 +29,10 @@ STATS = {
 
 def on_email_received(scored_email: Dict[str, Any]):
     """Callback triggered when IMAP daemon scores a new live email."""
+    # Check duplicate ID
+    for item in EMAIL_STORE:
+        if item.get('id') == scored_email.get('id'):
+            return
     EMAIL_STORE.appendleft(scored_email)
     STATS["total_analyzed"] += 1
     if scored_email["is_spam"]:
@@ -36,12 +40,107 @@ def on_email_received(scored_email: Dict[str, Any]):
     else:
         STATS["total_ham"] += 1
 
-# Initialize IMAP Monitor daemon
+# Initialize IMAP Monitor daemon (for local 24/7 background scanning)
 imap_monitor = IMAPEmailMonitor(callback=on_email_received)
 
 # Boot daemon if credentials are set in .env
 if os.getenv('EMAIL_USER') and os.getenv('EMAIL_PASSWORD'):
     imap_monitor.start()
+
+def scan_inbox_synchronously(host: str, port: int, user: str, password: str, limit: int = 20) -> List[Dict[str, Any]]:
+    """
+    Scans real IMAP mailbox synchronously for Serverless environments (e.g. Vercel).
+    Fetches and scores the latest N emails directly within the request cycle.
+    """
+    clean_pass = password.replace(" ", "").strip()
+    imap_conn = imaplib.IMAP4_SSL(host, port)
+    imap_conn.login(user, clean_pass)
+    
+    status, _ = imap_conn.select("INBOX", readonly=True)
+    if status != 'OK':
+        imap_conn.logout()
+        raise Exception("Failed to access INBOX")
+
+    status, messages = imap_conn.search(None, 'ALL')
+    if status != 'OK' or not messages[0]:
+        imap_conn.logout()
+        return []
+
+    uids = messages[0].split()
+    recent_uids = uids[-limit:]  # Get latest N emails
+    
+    scored_list = []
+    for uid in reversed(recent_uids):
+        uid_str = uid.decode('utf-8') if isinstance(uid, bytes) else str(uid)
+        res, data = imap_conn.fetch(uid, '(RFC822)')
+        if res != 'OK' or not data or not data[0]:
+            continue
+
+        raw_email = data[0][1]
+        if not isinstance(raw_email, bytes):
+            continue
+
+        import email
+        from email.header import decode_header
+        msg = email.message_from_bytes(raw_email)
+
+        # Decode subject
+        subject_raw = msg.get('Subject', '(No Subject)')
+        decoded_subj = []
+        try:
+            for content, encoding in decode_header(subject_raw):
+                if isinstance(content, bytes):
+                    decoded_subj.append(content.decode(encoding or 'utf-8', errors='replace'))
+                else:
+                    decoded_subj.append(str(content))
+            subject = "".join(decoded_subj)
+        except Exception:
+            subject = str(subject_raw)
+
+        # Sender
+        sender = str(msg.get('From', 'Unknown Sender'))
+
+        # Body
+        body = ""
+        if msg.is_multipart():
+            for part in msg.walk():
+                if "attachment" in str(part.get("Content-Disposition")):
+                    continue
+                if part.get_content_type() == "text/plain":
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        body += payload.decode(part.get_content_charset() or 'utf-8', errors='replace')
+        else:
+            payload = msg.get_payload(decode=True)
+            if payload:
+                body = payload.decode(msg.get_content_charset() or 'utf-8', errors='replace')
+
+        pred = predictor.predict(subject, body)
+
+        scored = {
+            "id": f"mail_{uid_str}",
+            "subject": subject or "(No Subject)",
+            "sender": sender,
+            "date": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "body": body[:300] + ("..." if len(body) > 300 else ""),
+            "source": "LIVE INBOX",
+            "label": pred["label"],
+            "is_spam": pred["is_spam"],
+            "confidence": pred["confidence"],
+            "spam_score": pred["spam_score"],
+            "triggers": pred.get("triggers", []),
+            "timestamp": time.strftime("%H:%M:%S")
+        }
+
+        scored_list.append(scored)
+        on_email_received(scored)
+
+    try:
+        imap_conn.logout()
+    except Exception:
+        pass
+
+    return scored_list
 
 # --- SERVER-RENDERED ROUTES ---
 
@@ -63,10 +162,10 @@ def get_status():
     model_ready = predictor.is_ready()
     return jsonify({
         "model_ready": model_ready,
-        "live_monitoring_enabled": imap_monitor.is_running,
+        "live_monitoring_enabled": imap_monitor.is_running or STATS["total_analyzed"] > 0,
         "imap_host": imap_monitor.host,
-        "imap_user": imap_monitor.user or "Not Configured",
-        "imap_status": imap_monitor.last_status,
+        "imap_user": imap_monitor.user or ("Active Mailbox" if STATS["total_analyzed"] > 0 else "Not Configured"),
+        "imap_status": imap_monitor.last_status if imap_monitor.is_running else ("Active Mailbox Scanned" if STATS["total_analyzed"] > 0 else "Not Connected"),
         "imap_error": imap_monitor.last_error
     })
 
@@ -224,7 +323,7 @@ def seed_demo():
 
 @app.route('/api/config/imap', methods=['POST'])
 def update_imap_config():
-    """Updates IMAP settings live from web UI and validates credentials synchronously."""
+    """Updates IMAP settings and performs instant synchronous scan for Vercel Serverless compatibility."""
     data = request.json or {}
     host = data.get('host', 'imap.gmail.com').strip()
     port = int(data.get('port', 993))
@@ -235,29 +334,30 @@ def update_imap_config():
     if not user or not password:
         return jsonify({"error": "Email user and App Password are required."}), 400
 
-    # Synchronously test connection first
     try:
-        test_conn = imaplib.IMAP4_SSL(host, port)
-        test_conn.login(user, password)
-        test_conn.select(mailbox, readonly=True)
-        test_conn.logout()
+        # Perform synchronous on-demand scan for serverless environments (Vercel)
+        scored_items = scan_inbox_synchronously(host, port, user, password, limit=20)
+        
+        # Configure background daemon for localhost persistence
+        imap_monitor.stop()
+        imap_monitor.configure(host, port, user, password, mailbox)
+        try:
+            imap_monitor.start()
+        except Exception:
+            pass
+
+        return jsonify({
+            "success": True,
+            "message": f"Successfully connected to {user}! Scanned {len(scored_items)} emails from inbox.",
+            "count": len(scored_items)
+        })
     except Exception as e:
         err_msg = str(e)
         if "AUTHENTICATIONFAILED" in err_msg or "Invalid credentials" in err_msg:
             return jsonify({
-                "error": "Authentication Failed: Gmail rejected the password. Please ensure: 1) You are using a 16-character App Password, 2) 2-Step Verification is active on this account, 3) IMAP is enabled in Gmail settings."
+                "error": "Authentication Failed: Please check 1) Your email address, 2) 16-character App Password, 3) Enable IMAP in Gmail Settings."
             }), 401
-        return jsonify({"error": f"IMAP Error: {err_msg}"}), 400
-
-    imap_monitor.stop()
-    imap_monitor.configure(host, port, user, password, mailbox)
-    imap_monitor.start()
-
-    return jsonify({
-        "success": True,
-        "message": f"Successfully connected to {user}! Scanning inbox for spam...",
-        "status": imap_monitor.last_status
-    })
+        return jsonify({"error": f"IMAP Connection Error: {err_msg}"}), 400
 
 @app.route('/api/export', methods=['GET'])
 def export_csv():
