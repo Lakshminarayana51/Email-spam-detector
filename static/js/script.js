@@ -5,12 +5,10 @@ let pollTimer = null;
 let cachedEmails = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Initial fetch
     fetchSystemStatus();
     fetchStats();
     fetchEmailFeed();
 
-    // Setup polling every 3 seconds
     pollTimer = setInterval(() => {
         fetchSystemStatus();
         fetchStats();
@@ -18,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000);
 });
 
-// Select provider preset in connection modal
 function selectProvider(provider) {
     const hostInput = document.getElementById('imapHost');
     const portInput = document.getElementById('imapPort');
@@ -46,7 +43,6 @@ function selectProvider(provider) {
     }
 }
 
-// Fetch system & model status
 async function fetchSystemStatus() {
     try {
         const res = await fetch('/api/status');
@@ -101,7 +97,6 @@ async function fetchSystemStatus() {
     }
 }
 
-// Disconnect active session
 async function disconnectSession() {
     if (!confirm('Are you sure you want to disconnect and clear your session email details?')) {
         return;
@@ -120,7 +115,6 @@ async function disconnectSession() {
     }
 }
 
-// Fetch live detection statistics
 async function fetchStats() {
     try {
         const res = await fetch('/api/stats');
@@ -146,7 +140,6 @@ async function fetchStats() {
     }
 }
 
-// Fetch scored email feed table
 async function fetchEmailFeed() {
     const tbody = document.getElementById('emailTableBody');
     if (!tbody) return;
@@ -218,7 +211,6 @@ async function fetchEmailFeed() {
     }
 }
 
-// Open email inspector modal
 function openEmailInspector(index) {
     const email = cachedEmails[index];
     if (!email) return;
@@ -265,7 +257,6 @@ function closeEmailModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-// Filter button toggle
 function setFilter(filterType) {
     currentFilter = filterType;
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -274,7 +265,6 @@ function setFilter(filterType) {
     fetchEmailFeed();
 }
 
-// Seed Demo Data
 async function seedDemoData() {
     const btn = document.getElementById('btnSeedDemo');
     if (btn) btn.disabled = true;
@@ -293,7 +283,6 @@ async function seedDemoData() {
     }
 }
 
-// IMAP Modal Handling
 function openIMAPModal() {
     const modal = document.getElementById('imapModal');
     if (modal) modal.classList.remove('hidden');
@@ -316,13 +305,21 @@ async function submitIMAPConfig(event) {
 
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting & Scanning...';
+    msgDiv.className = 'modal-message success';
+    msgDiv.textContent = 'Connecting to IMAP server and scanning inbox... Please wait 5 seconds.';
+    msgDiv.classList.remove('hidden');
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
         const res = await fetch('/api/config/imap', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ host, port, user, password })
+            body: JSON.stringify({ host, port, user, password }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         const data = await res.json();
 
@@ -335,7 +332,7 @@ async function submitIMAPConfig(event) {
                 fetchSystemStatus();
                 fetchStats();
                 fetchEmailFeed();
-            }, 1500);
+            }, 1000);
         } else {
             msgDiv.className = 'modal-message error';
             msgDiv.textContent = data.error || 'Failed to connect to IMAP server. Verify App Password.';
@@ -343,7 +340,11 @@ async function submitIMAPConfig(event) {
         }
     } catch (err) {
         msgDiv.className = 'modal-message error';
-        msgDiv.textContent = 'Network error configuring IMAP.';
+        if (err.name === 'AbortError') {
+            msgDiv.textContent = 'Connection timeout. Check network connection or App Password.';
+        } else {
+            msgDiv.textContent = 'IMAP Connection Error: ' + (err.message || 'Check network credentials.');
+        }
         msgDiv.classList.remove('hidden');
     } finally {
         saveBtn.disabled = false;
@@ -351,7 +352,6 @@ async function submitIMAPConfig(event) {
     }
 }
 
-// Manual Test Inference Handler
 async function runTestInference(event) {
     event.preventDefault();
     const subject = document.getElementById('testSubject').value;

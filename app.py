@@ -20,10 +20,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'sentrymail_super_secret_session_key_2026')
 
 # SERVER-SIDE SESSION MEMORY STORE
-# Key: session_id (UUID string), Value: { "emails": [...], "stats": {...}, "user": "..." }
 SESSION_STORE: Dict[str, Dict[str, Any]] = {}
-
-# Active IMAP background monitors per session
 ACTIVE_MONITORS: Dict[str, IMAPEmailMonitor] = {}
 
 def get_or_create_sid() -> str:
@@ -55,7 +52,6 @@ def save_session_email(sid: str, scored_email: Dict[str, Any]):
             return
 
     emails.insert(0, scored_email)
-    # Cap session list to latest 200 items
     store["emails"] = emails[:200]
 
     stats["total_analyzed"] += 1
@@ -64,12 +60,14 @@ def save_session_email(sid: str, scored_email: Dict[str, Any]):
     else:
         stats["total_ham"] += 1
 
-def scan_inbox_synchronously(sid: str, host: str, port: int, user: str, password: str, limit: int = 30) -> List[Dict[str, Any]]:
+def scan_inbox_synchronously(sid: str, host: str, port: int, user: str, password: str, limit: int = 15) -> List[Dict[str, Any]]:
     """
-    Scans real IMAP mailbox synchronously and populates server-side session memory.
+    Scans real IMAP mailbox synchronously with socket timeout.
     """
     clean_pass = password.replace(" ", "").strip()
-    imap_conn = imaplib.IMAP4_SSL(host, port)
+    
+    # 15 second socket timeout for fast response
+    imap_conn = imaplib.IMAP4_SSL(host, port, timeout=15)
     imap_conn.login(user, clean_pass)
     
     status, _ = imap_conn.select("INBOX", readonly=True)
@@ -368,10 +366,9 @@ def update_imap_config():
         return jsonify({"error": "Email user and App Password are required."}), 400
 
     try:
-        scored_items = scan_inbox_synchronously(sid, host, port, user, password, limit=30)
+        scored_items = scan_inbox_synchronously(sid, host, port, user, password, limit=15)
         SESSION_STORE[sid]["user"] = user
 
-        # Start persistent background monitor for local server if active
         if sid in ACTIVE_MONITORS:
             ACTIVE_MONITORS[sid].stop()
         
@@ -451,7 +448,7 @@ def export_csv():
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("SentryMail Server-Side Session Memory Web Application Launching")
+    print("SentryMail Fast Server-Side Session Memory Web Application Launching")
     print("Dashboard available at: http://127.0.0.1:5000")
     print("=" * 60)
     app.run(host='0.0.0.0', port=5000, debug=False)
