@@ -1,0 +1,14 @@
+# Exclude heavy non-runtime files from Vercel deployment bundle
+data/
+generate_dataset.py
+train_model.py
+test_imap_auth.py
+scratch/
+model/training_history.png
+model/spam_ann_model.keras
+
+# Exclude virtualenvs & logs
+.venv/
+venv/
+__pycache__/
+*.log
