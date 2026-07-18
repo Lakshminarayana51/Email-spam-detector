@@ -3,6 +3,7 @@ import time
 import json
 import csv
 import io
+import imaplib
 from collections import deque
 from typing import Dict, Any
 from dotenv import load_dotenv
@@ -223,16 +224,30 @@ def seed_demo():
 
 @app.route('/api/config/imap', methods=['POST'])
 def update_imap_config():
-    """Updates IMAP settings live from web UI and restarts background scanner."""
+    """Updates IMAP settings live from web UI and validates credentials synchronously."""
     data = request.json or {}
     host = data.get('host', 'imap.gmail.com').strip()
     port = int(data.get('port', 993))
     user = data.get('user', '').strip()
-    password = data.get('password', '').strip()
+    password = data.get('password', '').replace(" ", "").strip()
     mailbox = data.get('mailbox', 'INBOX').strip()
 
     if not user or not password:
         return jsonify({"error": "Email user and App Password are required."}), 400
+
+    # Synchronously test connection first
+    try:
+        test_conn = imaplib.IMAP4_SSL(host, port)
+        test_conn.login(user, password)
+        test_conn.select(mailbox, readonly=True)
+        test_conn.logout()
+    except Exception as e:
+        err_msg = str(e)
+        if "AUTHENTICATIONFAILED" in err_msg or "Invalid credentials" in err_msg:
+            return jsonify({
+                "error": "Authentication Failed: Gmail rejected the password. Please ensure: 1) You are using a 16-character App Password, 2) 2-Step Verification is active on this account, 3) IMAP is enabled in Gmail settings."
+            }), 401
+        return jsonify({"error": f"IMAP Error: {err_msg}"}), 400
 
     imap_monitor.stop()
     imap_monitor.configure(host, port, user, password, mailbox)
@@ -240,7 +255,7 @@ def update_imap_config():
 
     return jsonify({
         "success": True,
-        "message": f"IMAP live monitoring initiated for {user}",
+        "message": f"Successfully connected to {user}! Scanning inbox for spam...",
         "status": imap_monitor.last_status
     })
 
