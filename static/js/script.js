@@ -174,7 +174,9 @@ async function fetchEmailFeed() {
 
             let triggersHtml = '';
             if (email.triggers && email.triggers.length > 0) {
-                triggersHtml = email.triggers.map(t => `<span class="btn-xs" style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); font-size: 0.7rem;">${escapeHtml(t)}</span>`).join(' ');
+                triggersHtml = `<div class="risk-triggers-container">` + 
+                    email.triggers.map(t => `<span class="trigger-tag"><i class="fa-solid fa-triangle-exclamation" style="font-size: 0.6rem;"></i> ${escapeHtml(t)}</span>`).join('') + 
+                    `</div>`;
             } else {
                 triggersHtml = `<span class="text-dim" style="font-size: 0.75rem;">None</span>`;
             }
@@ -244,7 +246,9 @@ function openEmailInspector(index) {
     body.textContent = email.body;
 
     if (email.triggers && email.triggers.length > 0) {
-        triggersList.innerHTML = email.triggers.map(t => `<span class="badge spam" style="font-size: 0.75rem;">${escapeHtml(t)}</span>`).join('');
+        triggersList.innerHTML = `<div class="risk-triggers-container">` + 
+            email.triggers.map(t => `<span class="trigger-tag" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(t)}</span>`).join('') + 
+            `</div>`;
     } else {
         triggersList.innerHTML = '<span class="text-dim" style="font-size: 0.8rem;">No high-risk keyword triggers detected.</span>';
     }

@@ -747,7 +747,7 @@ body.dark-theme {
     text-decoration: underline;
 }
 
-/* Email Feed Table */
+/* Email Feed Table & Risk Triggers Positioning */
 .table-container {
     width: 100%;
     overflow-x: auto;
@@ -756,7 +756,7 @@ body.dark-theme {
 
 .email-table {
     width: 100%;
-    min-width: 750px;
+    min-width: 800px;
     border-collapse: collapse;
     text-align: left;
 }
@@ -778,6 +778,32 @@ body.dark-theme {
     border-bottom: 1px solid var(--border-glass);
     font-size: 0.88rem;
     vertical-align: middle;
+}
+
+/* Risk Trigger Container & Badges (Fixes Overlapping Box Issue) */
+.risk-triggers-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    max-width: 220px;
+}
+
+.trigger-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: var(--radius-sm);
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    line-height: 1.2;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .email-table tbody tr {
