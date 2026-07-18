@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentryMail — Real-Time Email Spam Detector</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="navbar">
+            <div class="nav-brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">SentryMail</span>
+                    <span class="brand-badge">ANN AI 2.0</span>
+                </div>
+            </div>
+
+            <nav class="nav-links">
+                <a href="/" class="nav-item active"><i class="fa-solid fa-chart-pie"></i> Live Dashboard</a>
+                <a href="/test" class="nav-item"><i class="fa-solid fa-vial"></i> Test Simulator</a>
+            </nav>
+
+            <div class="nav-actions">
+                <a href="/api/export" class="btn btn-secondary" title="Export Scored Log CSV">
+                    <i class="fa-solid fa-download"></i> Export CSV
+                </a>
+                <button id="btnConnectIMAP" class="btn btn-primary" onclick="openIMAPModal()">
+                    <i class="fa-solid fa-plug"></i> <span id="imapBtnText">Connect Real Inbox</span>
+                </button>
+                <button id="btnSeedDemo" class="btn btn-secondary" onclick="seedDemoData()">
+                    <i class="fa-solid fa-bolt"></i> Seed Demo Data
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Content -->
+        <main class="dashboard-content">
+            <!-- System Status Banner -->
+            <section class="status-banner">
+                <div class="status-item">
+                    <span class="status-indicator" id="modelStatusDot"></span>
+                    <div class="status-info">
+                        <span class="status-label">Neural Network Engine</span>
+                        <span class="status-value" id="modelStatusText">Checking model...</span>
+                    </div>
+                </div>
+
+                <div class="status-divider"></div>
+
+                <div class="status-item">
+                    <span class="status-indicator" id="imapStatusDot"></span>
+                    <div class="status-info">
+                        <span class="status-label">IMAP Mailbox Scanner</span>
+                        <span class="status-value" id="imapStatusText">Checking connection...</span>
+                    </div>
+                </div>
+
+                <div class="status-divider"></div>
+
+                <div class="status-item">
+                    <div class="status-info">
+                        <span class="status-label">Active Mailbox</span>
+                        <span class="status-value mono" id="imapUserText">None configured</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Metrics Grid -->
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <div class="card-header">
+                        <span class="card-title">Total Analyzed</span>
+                        <div class="card-icon blue"><i class="fa-solid fa-inbox"></i></div>
+                    </div>
+                    <div class="card-value" id="statTotal">0</div>
+                    <div class="card-subtext"><i class="fa-solid fa-arrows-rotate fa-spin spin-slow"></i> Real-time stream</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="card-header">
+                        <span class="card-title">Spam Threats</span>
+                        <div class="card-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    </div>
+                    <div class="card-value text-red" id="statSpam">0</div>
+                    <div class="card-subtext text-red" id="statSpamSub">0.0% of total volume</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="card-header">
+                        <span class="card-title">Legitimate (Ham)</span>
+                        <div class="card-icon green"><i class="fa-solid fa-circle-check"></i></div>
+                    </div>
+                    <div class="card-value text-green" id="statHam">0</div>
+                    <div class="card-subtext text-green">Verified safe messages</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="card-header">
+                        <span class="card-title">Threat Ratio Index</span>
+                        <div class="card-icon purple"><i class="fa-solid fa-gauge-high"></i></div>
+                    </div>
+                    <div class="threat-meter-container">
+                        <div class="threat-meter-bar" id="threatMeterBar" style="width: 0%;"></div>
+                    </div>
+                    <div class="card-subtext font-bold" id="statSpamPercent">0.0% Threat Level</div>
+                </div>
+            </section>
+
+            <!-- Email Activity Log Section -->
+            <section class="activity-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <h2><i class="fa-solid fa-list-check"></i> Scored Emails Activity Feed</h2>
+                        <span class="pulse-ring"></span>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All Messages</button>
+                        <button class="filter-btn" data-filter="spam" onclick="setFilter('spam')">Spam Only</button>
+                        <button class="filter-btn" data-filter="ham" onclick="setFilter('ham')">Ham Only</button>
+                    </div>
+                </div>
+
+                <!-- Email Feed Table -->
+                <div class="table-container">
+                    <table class="email-table">
+                        <thead>
+                            <tr>
+                                <th>Score / Status</th>
+                                <th>Subject & Preview</th>
+                                <th>Sender</th>
+                                <th>Source</th>
+                                <th>Triggers</th>
+                                <th>Confidence</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="emailTableBody">
+                            <tr class="empty-row">
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-envelope-open-text"></i>
+                                        <p>No emails analyzed yet.</p>
+                                        <span class="sub-state">Click <strong>"Connect Real Inbox"</strong> or <strong>"Seed Demo Data"</strong> to scan emails for spam.</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- IMAP Connection Modal -->
+    <div id="imapModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-envelope-open-text"></i> Connect Real Email Inbox</h3>
+                <button class="btn-close" onclick="closeIMAPModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">
+                    Connect your email account to scan your inbox for spam emails live.
+                    <br><strong class="text-amber"><i class="fa-solid fa-shield-cat"></i> Read-Only Security:</strong> SentryMail only inspects email headers & body for spam classification. It <strong>never deletes, moves, or alters</strong> your emails.
+                </p>
+
+                <!-- Provider Presets -->
+                <div class="preset-buttons" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+                    <button type="button" class="btn-xs active" onclick="selectProvider('gmail')"><i class="fa-brands fa-google"></i> Gmail</button>
+                    <button type="button" class="btn-xs" onclick="selectProvider('outlook')"><i class="fa-brands fa-microsoft"></i> Outlook / Hotmail</button>
+                    <button type="button" class="btn-xs" onclick="selectProvider('yahoo')"><i class="fa-brands fa-yahoo"></i> Yahoo</button>
+                    <button type="button" class="btn-xs" onclick="selectProvider('custom')">Custom IMAP</button>
+                </div>
+
+                <form id="imapForm" onsubmit="submitIMAPConfig(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>IMAP Host Server</label>
+                            <input type="text" id="imapHost" value="imap.gmail.com" required placeholder="imap.gmail.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="number" id="imapPort" value="993" required placeholder="993">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label>Email Address</label>
+                            <input type="email" id="emailUser" required placeholder="your_email@gmail.com">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label>Google App Password / Mail Password</label>
+                            <input type="password" id="emailPassword" required placeholder="•••• •••• •••• ••••">
+                            <small class="help-text" id="passHelpText">
+                                <strong>For Gmail:</strong> Generate a 16-character <em>App Password</em> (requires 2-Step Verification) at:
+                                <a href="https://myaccount.google.com/apppasswords" target="_blank">Google Security -> App Passwords</a>.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div id="imapModalMsg" class="modal-message hidden"></div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeIMAPModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btnSaveIMAP">
+                            <i class="fa-solid fa-satellite-dish"></i> Connect & Scan Inbox
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Inspector Modal -->
+    <div id="emailDetailModal" class="modal-overlay hidden">
+        <div class="modal-card modal-large">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-microchip"></i> Email Neural Inspector</h3>
+                <button class="btn-close" onclick="closeEmailModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="inspector-header">
+                    <span id="inspectBadge" class="badge-large spam">SPAM</span>
+                    <div>
+                        <h4 id="inspectSubject" style="font-size: 1.1rem; margin-bottom: 0.2rem;">Subject</h4>
+                        <span id="inspectSender" class="mono text-muted" style="font-size: 0.85rem;">From</span>
+                    </div>
+                </div>
+
+                <div class="inspector-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 10px;">
+                    <div>
+                        <span style="font-size: 0.75rem; color: var(--text-dim); display: block;">CLASSIFICATION</span>
+                        <strong id="inspectLabel">SPAM</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.75rem; color: var(--text-dim); display: block;">CONFIDENCE</span>
+                        <strong id="inspectConfidence">99.5%</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.75rem; color: var(--text-dim); display: block;">SPAM SCORE</span>
+                        <strong id="inspectScore" class="mono">0.9950</strong>
+                    </div>
+                </div>
+
+                <div class="inspector-triggers" style="margin-bottom: 1rem;">
+                    <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">DETECTED RISK TRIGGERS</span>
+                    <div id="inspectTriggersList" style="display: flex; gap: 0.4rem; flex-wrap: wrap;"></div>
+                </div>
+
+                <div class="inspector-body" style="background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-glass); max-height: 220px; overflow-y: auto;">
+                    <span style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 0.5rem;">EMAIL BODY CONTENT</span>
+                    <p id="inspectBodyText" style="font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap;"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEmailModal()">Close Inspector</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

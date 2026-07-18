@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables & secrets
+.env
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary data / test scripts
+scratch/
+test_imap_auth.py
+generate_dataset.py
+
+# Large binary cache files (Optional)
+*.log
