@@ -7,7 +7,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Custom CSS -->
@@ -125,14 +125,14 @@
             <section class="activity-section">
                 <div class="section-header">
                     <div class="section-title">
-                        <h2><i class="fa-solid fa-list-check"></i> Scored Emails Activity Feed</h2>
+                        <h2 class="robotic-heading"><i class="fa-solid fa-terminal"></i> [ SCORED_EMAILS_ACTIVITY_FEED ]</h2>
                         <span class="pulse-ring"></span>
                     </div>
 
                     <div class="filter-controls">
-                        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All Messages</button>
-                        <button class="filter-btn" data-filter="spam" onclick="setFilter('spam')">Spam Only</button>
-                        <button class="filter-btn" data-filter="ham" onclick="setFilter('ham')">Ham Only</button>
+                        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">SYS.ALL</button>
+                        <button class="filter-btn" data-filter="spam" onclick="setFilter('spam')">SPAM.THREATS</button>
+                        <button class="filter-btn" data-filter="ham" onclick="setFilter('ham')">SAFE.HAM</button>
                     </div>
                 </div>
 
@@ -141,22 +141,22 @@
                     <table class="email-table">
                         <thead>
                             <tr>
-                                <th>Score / Status</th>
-                                <th>Subject & Preview</th>
-                                <th>Sender</th>
-                                <th>Source</th>
-                                <th>Triggers</th>
-                                <th>Confidence</th>
-                                <th>Time</th>
+                                <th style="width: 140px;">STATUS / LOGIT</th>
+                                <th>SUBJECT & PREVIEW CONTENT</th>
+                                <th style="width: 220px;">SENDER IDENTIFIER</th>
+                                <th style="width: 110px;">SOURCE</th>
+                                <th style="width: 160px;">RISK TRIGGERS</th>
+                                <th style="width: 120px;">CONFIDENCE</th>
+                                <th style="width: 100px;">TIMESTAMP</th>
                             </tr>
                         </thead>
                         <tbody id="emailTableBody">
                             <tr class="empty-row">
                                 <td colspan="7">
                                     <div class="empty-state">
-                                        <i class="fa-solid fa-envelope-open-text"></i>
-                                        <p>No emails analyzed in this session.</p>
-                                        <span class="sub-state">Click <strong>"Connect Real Inbox"</strong> or <strong>"Seed Demo Data"</strong> to scan emails for spam.</span>
+                                        <i class="fa-solid fa-microchip fa-bounce" style="font-size: 2rem; color: #60a5fa; margin-bottom: 0.5rem;"></i>
+                                        <p class="robotic-text">SYSTEM_IDLE // NO_ACTIVE_EMAIL_LOGS</p>
+                                        <span class="sub-state">Click <strong>"Connect Real Inbox"</strong> or <strong>"Seed Demo Data"</strong> to initiate spam inference pipeline.</span>
                                     </div>
                                 </td>
                             </tr>

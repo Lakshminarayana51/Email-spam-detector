@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SPAM MAIL DETECTOR — Modern Dark Theme Design System
+   SPAM MAIL DETECTOR — Cyberpunk / Robotic Dark Theme Design System
    ========================================================================== */
 
 :root {
@@ -12,7 +12,7 @@
 
     --primary-blue: #3b82f6;
     --primary-blue-hover: #2563eb;
-    --primary-glow: rgba(59, 130, 246, 0.25);
+    --primary-glow: rgba(59, 130, 246, 0.35);
 
     --accent-red: #ef4444;
     --accent-red-bg: rgba(239, 68, 68, 0.15);
@@ -190,6 +190,7 @@ body.dark-theme {
     color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s ease;
+    font-family: var(--font-mono);
 }
 
 .btn-xs.active, .btn-xs:hover {
@@ -350,22 +351,41 @@ body.dark-theme {
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Activity Feed Section */
+/* ==========================================================================
+   Activity Feed Section — Futuristic Robotic & Cyberpunk Styling
+   ========================================================================== */
 .activity-section {
     background: var(--bg-card);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--border-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(59, 130, 246, 0.25);
     border-radius: var(--radius-md);
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.activity-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary-blue), var(--accent-purple), transparent);
 }
 
 .section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border-glass);
+    padding-bottom: 1rem;
 }
 
 .section-title {
@@ -374,12 +394,33 @@ body.dark-theme {
     gap: 0.75rem;
 }
 
-.section-title h2 {
-    font-size: 1.15rem;
-    font-weight: 700;
+/* Robotic Cyberpunk Heading */
+.robotic-heading {
+    font-family: var(--font-mono) !important;
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: #60a5fa !important;
+    text-shadow: 0 0 15px rgba(59, 130, 246, 0.5) !important;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.65rem;
+}
+
+.pulse-ring {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #60a5fa;
+    box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.7);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(96, 165, 250, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(96, 165, 250, 0); }
 }
 
 .filter-controls {
@@ -388,21 +429,24 @@ body.dark-theme {
 }
 
 .filter-btn {
-    padding: 0.4rem 0.9rem;
-    font-size: 0.82rem;
-    font-weight: 600;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border-glass);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.3);
     color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s ease;
+    letter-spacing: 0.04em;
 }
 
 .filter-btn.active, .filter-btn:hover {
     background: var(--primary-blue);
     color: #fff;
     border-color: var(--primary-blue);
+    box-shadow: 0 0 12px var(--primary-glow);
 }
 
 /* Email Feed Table */
@@ -419,13 +463,15 @@ body.dark-theme {
 }
 
 .email-table th {
-    padding: 0.85rem 1rem;
-    font-size: 0.75rem;
+    padding: 0.9rem 1rem;
+    font-size: 0.72rem;
     font-weight: 700;
+    font-family: var(--font-mono);
     color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     border-bottom: 1px solid var(--border-glass);
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .email-table td {
@@ -440,7 +486,26 @@ body.dark-theme {
 }
 
 .email-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(59, 130, 246, 0.06);
+}
+
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.robotic-text {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    margin-bottom: 0.3rem;
 }
 
 /* Badges */
@@ -448,16 +513,17 @@ body.dark-theme {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.3rem 0.7rem;
+    padding: 0.35rem 0.75rem;
     border-radius: var(--radius-full);
     font-size: 0.75rem;
     font-weight: 700;
+    font-family: var(--font-mono);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
 }
 
-.badge.spam { background: var(--accent-red-bg); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
-.badge.ham { background: var(--accent-green-bg); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge.spam { background: var(--accent-red-bg); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.35); }
+.badge.ham { background: var(--accent-green-bg); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.35); }
 
 .badge-large {
     font-size: 0.95rem;
@@ -523,12 +589,7 @@ body.dark-theme {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 700;
-}
-
-.dev-name {
-    font-size: 0.98rem;
-    font-weight: 700;
-    color: var(--text-main);
+    font-family: var(--font-mono);
 }
 
 .developer-links {
@@ -546,6 +607,7 @@ body.dark-theme {
     border-radius: var(--radius-full);
     font-size: 0.8rem;
     font-weight: 600;
+    font-family: var(--font-sans);
     text-decoration: none;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border-glass);
