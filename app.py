@@ -17,7 +17,7 @@ from utils.email_reader import IMAPEmailMonitor
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'sentrymail_super_secret_session_key_2026')
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'spam_mail_detector_secret_key_2026')
 
 # SERVER-SIDE SESSION MEMORY STORE
 SESSION_STORE: Dict[str, Dict[str, Any]] = {}
@@ -46,7 +46,6 @@ def save_session_email(sid: str, scored_email: Dict[str, Any]):
     emails = store["emails"]
     stats = store["stats"]
 
-    # Avoid duplicate IDs
     for item in emails:
         if item.get('id') == scored_email.get('id'):
             return
@@ -66,7 +65,6 @@ def scan_inbox_synchronously(sid: str, host: str, port: int, user: str, password
     """
     clean_pass = password.replace(" ", "").strip()
     
-    # 15 second socket timeout for fast response
     imap_conn = imaplib.IMAP4_SSL(host, port, timeout=15)
     imap_conn.login(user, clean_pass)
     
@@ -98,7 +96,6 @@ def scan_inbox_synchronously(sid: str, host: str, port: int, user: str, password
 
         msg = email.message_from_bytes(raw_email)
 
-        # Decode subject
         subject_raw = msg.get('Subject', '(No Subject)')
         decoded_subj = []
         try:
@@ -443,12 +440,12 @@ def export_csv():
         ])
 
     response = Response(output.getvalue(), mimetype="text/csv")
-    response.headers["Content-Disposition"] = "attachment; filename=sentrymail_export.csv"
+    response.headers["Content-Disposition"] = "attachment; filename=spam_mail_detector_export.csv"
     return response
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("SentryMail Fast Server-Side Session Memory Web Application Launching")
+    print("Spam Mail Detector AI Web Application Launching")
     print("Dashboard available at: http://127.0.0.1:5000")
     print("=" * 60)
     app.run(host='0.0.0.0', port=5000, debug=False)

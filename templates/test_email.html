@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SentryMail — Manual Email Test Simulator</title>
+    <title>Manual Test Simulator — Spam Mail Detector</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,8 +22,8 @@
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
                 <div class="brand-text">
-                    <span class="brand-name">SentryMail</span>
-                    <span class="brand-badge">ANN AI 2.0</span>
+                    <span class="brand-name">Spam Mail Detector</span>
+                    <span class="brand-badge">TEST SIMULATOR</span>
                 </div>
             </div>
 
@@ -31,94 +31,93 @@
                 <a href="/" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Live Dashboard</a>
                 <a href="/test" class="nav-item active"><i class="fa-solid fa-vial"></i> Test Simulator</a>
             </nav>
+
+            <div class="nav-actions">
+                <a href="/" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+            </div>
         </header>
 
-        <!-- Main Test Content -->
-        <main class="test-container">
-            <div class="page-title-area">
-                <h1><i class="fa-solid fa-vial-circle-check"></i> Interactive Spam Classifier Sandbox</h1>
-                <p>Enter any custom email subject line and body text below. The TF-IDF vectorizer and Artificial Neural Network will analyze the feature signature in real time.</p>
-            </div>
-
-            <div class="test-grid">
-                <!-- Test Input Form Card -->
+        <!-- Main Content Grid -->
+        <main class="dashboard-content">
+            <div class="test-layout">
+                <!-- Test Form Column -->
                 <div class="test-card">
-                    <div class="card-title-bar">
-                        <h3><i class="fa-solid fa-feather"></i> Compose Test Email</h3>
-                        <div class="quick-samples">
-                            <span class="sample-label">Quick Load:</span>
-                            <button type="button" class="btn-xs" onclick="loadSample('spam1')">Phishing Alert</button>
-                            <button type="button" class="btn-xs" onclick="loadSample('spam2')">Lottery Scam</button>
-                            <button type="button" class="btn-xs" onclick="loadSample('ham1')">Work Invitation</button>
-                        </div>
+                    <div class="test-card-header">
+                        <h2><i class="fa-solid fa-vial-circle-check"></i> Manual Spam Inference Engine</h2>
+                        <p class="test-desc">Enter any custom email subject & body text below to test the trained ANN neural classifier instantly without connecting a real inbox.</p>
                     </div>
 
-                    <form id="testEmailForm" onsubmit="runTestInference(event)">
+                    <!-- Preset Sample Buttons -->
+                    <div class="sample-presets">
+                        <span class="sample-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Quick Presets:</span>
+                        <button class="btn-xs sample-btn spam" onclick="loadSample('phishing')">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Phishing Alert
+                        </button>
+                        <button class="btn-xs sample-btn spam" onclick="loadSample('lottery')">
+                            <i class="fa-solid fa-gift"></i> Lottery Scam
+                        </button>
+                        <button class="btn-xs sample-btn ham" onclick="loadSample('meeting')">
+                            <i class="fa-solid fa-calendar-check"></i> Work Meeting
+                        </button>
+                        <button class="btn-xs sample-btn ham" onclick="loadSample('newsletter')">
+                            <i class="fa-solid fa-newspaper"></i> Engineering Newsletter
+                        </button>
+                    </div>
+
+                    <form id="testForm" onsubmit="runTestInference(event)">
                         <div class="form-group">
-                            <label for="testSubject">Email Subject Line (2x Weight Factor)</label>
-                            <input type="text" id="testSubject" required placeholder="e.g. URGENT: Update your banking login details now!">
+                            <label>Email Subject Line</label>
+                            <input type="text" id="testSubject" required placeholder="e.g., URGENT: Verify your account immediately">
                         </div>
 
                         <div class="form-group">
-                            <label for="testBody">Email Body Content</label>
-                            <textarea id="testBody" rows="7" required placeholder="Paste plain text or raw HTML email content here..."></textarea>
+                            <label>Email Body Content</label>
+                            <textarea id="testBody" rows="7" required placeholder="Paste or type raw email text content here..."></textarea>
                         </div>
 
                         <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" onclick="clearTestForm()">Clear Form</button>
-                            <button type="submit" class="btn btn-primary" id="btnRunInference">
+                            <button type="submit" class="btn btn-primary btn-large" id="btnRunInference">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> Classify Email Now
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <!-- Test Result Display Card -->
-                <div class="result-card">
-                    <div class="card-title-bar">
-                        <h3><i class="fa-solid fa-brain"></i> Neural Network Analysis</h3>
+                <!-- Prediction Results Column -->
+                <div class="test-card result-card">
+                    <div class="test-card-header">
+                        <h2><i class="fa-solid fa-brain"></i> Neural Network Analysis</h2>
+                        <p class="test-desc">Model confidence score & term feature breakdown.</p>
                     </div>
 
                     <div id="resultPlaceholder" class="result-placeholder">
-                        <i class="fa-solid fa-microchip"></i>
-                        <p>Submit an email on the left to view neural network predictions, probability scores, and processed feature tokens.</p>
+                        <i class="fa-solid fa-robot"></i>
+                        <p>Awaiting Test Submission</p>
+                        <span>Fill in the form on the left or select a preset to generate live spam probability scores.</span>
                     </div>
 
                     <div id="resultContent" class="result-content hidden">
-                        <!-- Label Badge Header -->
-                        <div class="result-header" id="resultHeader">
-                            <div class="badge-large" id="resultBadge">
-                                <i class="fa-solid fa-shield-cat" id="resultIcon"></i>
-                                <span id="resultLabelText">SPAM</span>
-                            </div>
-                            <div class="confidence-display">
-                                <span class="conf-label">Confidence</span>
-                                <span class="conf-value" id="resultConfidence">98.5%</span>
+                        <div class="result-badge-container">
+                            <div id="resultBadge" class="badge-large spam">
+                                <i id="resultIcon" class="fa-solid fa-shield-cat"></i>
+                                <span id="resultLabelText">SPAM THREAT</span>
                             </div>
                         </div>
 
-                        <!-- Spam Probability Gauge -->
-                        <div class="prob-section">
-                            <div class="prob-label">
+                        <div class="probability-container">
+                            <div class="prob-header">
                                 <span>Spam Probability Score</span>
-                                <span id="rawScoreText" class="mono font-bold">0.9850</span>
+                                <span id="resultConfidence" class="prob-percent">0.0%</span>
                             </div>
-                            <div class="prob-bar-track">
-                                <div class="prob-bar-fill" id="probBarFill" style="width: 98.5%;"></div>
+                            <div class="prob-bar-bg">
+                                <div id="probBarFill" class="prob-bar-fill" style="width: 0%;"></div>
                             </div>
-                            <div class="prob-legend">
-                                <span>0.0 (Ham)</span>
-                                <span>0.5 Threshold</span>
-                                <span>1.0 (Spam)</span>
-                            </div>
+                            <small class="prob-sub">Raw Model Logit: <span id="rawScoreText" class="mono">0.0000</span></small>
                         </div>
 
-                        <!-- Processed Feature Snippet -->
-                        <div class="feature-snippet-box">
-                            <span class="snippet-title"><i class="fa-solid fa-filter"></i> Preprocessed Feature Tokens (Subject Weighted 2x)</span>
-                            <div class="snippet-text mono" id="snippetText">
-                                verify verify banking login details customer notice suspicious activity account
-                            </div>
+                        <div class="features-breakdown">
+                            <h3><i class="fa-solid fa-filter"></i> Processed Tokens & Cleaned Terms</h3>
+                            <div id="snippetText" class="token-box mono"></div>
                         </div>
                     </div>
                 </div>
@@ -126,35 +125,27 @@
         </main>
     </div>
 
+    <!-- JS Scripts -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
-        // Sample loader for quick testing
+        // Preset sample loader
         function loadSample(type) {
-            const samples = {
-                spam1: {
-                    subject: "URGENT: Suspicious login attempt on your account!",
-                    body: "Dear User, someone tried to log into your account from an unrecognized device. Click http://security-verify-login.com immediately to secure your password."
-                },
-                spam2: {
-                    subject: "CONGRATULATIONS! You won $500,000 in the International Lottery!",
-                    body: "Your email address won $500,000 USD in our lucky draw! Contact claims officer Mr. John immediately with your bank info to collect payment."
-                },
-                ham1: {
-                    subject: "Re: Q3 Engineering Roadmap & Team Meeting",
-                    body: "Hi Alex, attached are the slides for tomorrow's roadmap review meeting. Please let me know if you'd like to add any items to the agenda."
-                }
-            };
-            if (samples[type]) {
-                document.getElementById('testSubject').value = samples[type].subject;
-                document.getElementById('testBody').value = samples[type].body;
-            }
-        }
+            const subj = document.getElementById('testSubject');
+            const body = document.getElementById('testBody');
 
-        function clearTestForm() {
-            document.getElementById('testSubject').value = '';
-            document.getElementById('testBody').value = '';
-            document.getElementById('resultContent').classList.add('hidden');
-            document.getElementById('resultPlaceholder').classList.remove('hidden');
+            if (type === 'phishing') {
+                subj.value = "URGENT: Your PayPal account access has been restricted!";
+                body.value = "Dear Customer, We detected unauthorized login attempts from an unknown IP address. Click http://verify-paypal-security.com to confirm your identity and avoid permanent suspension.";
+            } else if (type === 'lottery') {
+                subj.value = "CONGRATULATIONS! You won $500,000 in International Sweepstakes";
+                body.value = "You have been selected as the grand winner of $500,000! To claim your cash prize, reply immediately with your full bank account details and deposit fee.";
+            } else if (type === 'meeting') {
+                subj.value = "Updated Architecture Specs & Q3 Roadmap Review";
+                body.value = "Hi team, please find attached the revised microservices architecture proposal. Let us sync on Tuesday at 10 AM to finalize the migration timelines.";
+            } else if (type === 'newsletter') {
+                subj.value = "Python 3.12 Release Notes & Performance Benchmarks";
+                body.value = "Welcome to PyDev Weekly issue #24. In this edition, we benchmark JIT compiler enhancements, standard library improvements, and new type annotations.";
+            }
         }
     </script>
 </body>
