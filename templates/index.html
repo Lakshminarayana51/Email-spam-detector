@@ -165,6 +165,47 @@
                 </div>
             </section>
         </main>
+
+        <!-- Developer Details & Footer -->
+        <footer class="app-footer">
+            <div class="footer-container">
+                <div class="developer-info">
+                    <div class="dev-avatar">
+                        <i class="fa-solid fa-user-ninja"></i>
+                    </div>
+                    <div class="dev-text">
+                        <span class="dev-title">Designed & Developed by</span>
+                        <h4 class="dev-name">Lakkoju Lakshmi Narayana</h4>
+                    </div>
+                </div>
+
+                <div class="developer-links">
+                    <a href="https://www.linkedin.com/in/lakkoju-lakshmi-narayana-2a909b310/" target="_blank" class="dev-social-link linkedin" title="LinkedIn Profile">
+                        <i class="fa-brands fa-linkedin-in"></i>
+                        <span>LinkedIn</span>
+                    </a>
+                    <a href="https://github.com/Lakshminarayana51" target="_blank" class="dev-social-link github" title="GitHub Profile">
+                        <i class="fa-brands fa-github"></i>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="https://lakshminarayanaportfolio-ten.vercel.app/" target="_blank" class="dev-social-link portfolio" title="Personal Portfolio">
+                        <i class="fa-solid fa-globe"></i>
+                        <span>Portfolio</span>
+                    </a>
+                    <a href="https://leetcode.com/u/Lakshminarayana_51/" target="_blank" class="dev-social-link leetcode" title="LeetCode Profile">
+                        <i class="fa-solid fa-code"></i>
+                        <span>LeetCode</span>
+                    </a>
+                </div>
+
+                <div class="footer-terms">
+                    <button type="button" class="btn-terms" onclick="openTermsModal()">
+                        <i class="fa-solid fa-scale-balanced"></i> Terms & Conditions
+                    </button>
+                    <span class="copy-text">&copy; 2026 Spam Mail Detector. All Rights Reserved.</span>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <!-- IMAP Connection Modal -->
@@ -283,6 +324,40 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeEmailModal()">Close Inspector</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms & Conditions Modal -->
+    <div id="termsModal" class="modal-overlay hidden">
+        <div class="modal-card modal-large">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-scale-balanced"></i> Terms & Conditions — Spam Mail Detector</h3>
+                <button class="btn-close" onclick="closeTermsModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 420px; overflow-y: auto; padding-right: 0.5rem; line-height: 1.6; font-size: 0.88rem; color: var(--text-muted);">
+                <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; padding: 0.75rem 1rem; margin-bottom: 1.25rem; border-radius: 4px;">
+                    <strong style="color: #60a5fa;"><i class="fa-solid fa-circle-info"></i> Privacy & Read-Only Guarantee</strong>
+                    <p style="margin-top: 0.3rem; font-size: 0.82rem;">Spam Mail Detector operates strictly in <strong>Read-Only Mode</strong> via IMAP protocol. We do not store your raw email contents or passwords permanently on any database.</p>
+                </div>
+
+                <h4 style="color: var(--text-main); margin-bottom: 0.4rem;"><i class="fa-solid fa-lock"></i> 1. Read-Only Access & Data Handling</h4>
+                <p>When connecting an inbox, Spam Mail Detector connects exclusively via SSL/TLS IMAP in Read-Only state (`readonly=True`). The software processes message subjects and body tokens for real-time Neural Network inference. No email message is ever deleted, moved, modified, or forwarded.</p>
+
+                <h4 style="color: var(--text-main); margin-top: 1rem; margin-bottom: 0.4rem;"><i class="fa-solid fa-user-shield"></i> 2. User Privacy & Session Isolation</h4>
+                <p>All analyzed emails and metrics are stored in temporary, session-isolated server memory (`SESSION_STORE`). Data is cleared immediately when you click <strong>Disconnect</strong> or close your browser session. Shared URLs or links opened in separate browsers will never expose past session data.</p>
+
+                <h4 style="color: var(--text-main); margin-top: 1rem; margin-bottom: 0.4rem;"><i class="fa-solid fa-key"></i> 3. App Passwords & Security</h4>
+                <p>Users are strongly advised to generate dedicated, removable 16-character <strong>App Passwords</strong> (rather than primary account passwords). Passwords are used solely during socket authentication and are never stored in database records.</p>
+
+                <h4 style="color: var(--text-main); margin-top: 1rem; margin-bottom: 0.4rem;"><i class="fa-solid fa-gavel"></i> 4. Limitation of Liability</h4>
+                <p>Spam Mail Detector is an Artificial Intelligence classification tool designed for educational and analytical purposes. While our Multi-Layer Perceptron (ANN) model achieves high accuracy, no AI filter can guarantee 100% classification error immunity. The developers are not liable for misclassified messages.</p>
+
+                <h4 style="color: var(--text-main); margin-top: 1rem; margin-bottom: 0.4rem;"><i class="fa-solid fa-code"></i> 5. Developer Ownership & Credits</h4>
+                <p>Designed, architected, and built by <strong>Lakkoju Lakshmi Narayana</strong>. For inquiries or portfolio project details, visit <a href="https://lakshminarayanaportfolio-ten.vercel.app/" target="_blank" style="color: #60a5fa; text-decoration: underline;">Developer Portfolio</a>.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="closeTermsModal()">I Understand & Accept</button>
             </div>
         </div>
     </div>

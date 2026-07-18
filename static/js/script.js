@@ -1,4 +1,4 @@
-/* SentryMail — Interactive Frontend Script */
+/* Spam Mail Detector — Interactive Frontend Script */
 
 let currentFilter = 'all';
 let pollTimer = null;
@@ -257,6 +257,17 @@ function closeEmailModal() {
     if (modal) modal.classList.add('hidden');
 }
 
+// Terms Modal Handling
+function openTermsModal() {
+    const modal = document.getElementById('termsModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeTermsModal() {
+    const modal = document.getElementById('termsModal');
+    if (modal) modal.classList.add('hidden');
+}
+
 function setFilter(filterType) {
     currentFilter = filterType;
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -311,7 +322,7 @@ async function submitIMAPConfig(event) {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
         const res = await fetch('/api/config/imap', {
             method: 'POST',
