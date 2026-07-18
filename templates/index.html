@@ -207,11 +207,11 @@
         </footer>
     </div>
 
-    <!-- IMAP Connection Modal -->
+    <!-- IMAP Connection Cyber Modal -->
     <div id="imapModal" class="modal-overlay hidden">
-        <div class="modal-card">
+        <div class="modal-card cyber-modal">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-envelope-open-text"></i> Connect Real Email Inbox</h3>
+                <h3 class="robotic-heading"><i class="fa-solid fa-satellite-dish"></i> [ CONNECT_REAL_INBOX ]</h3>
                 <button class="btn-close" onclick="closeIMAPModal()">&times;</button>
             </div>
             <div class="modal-body">
@@ -220,46 +220,46 @@
                     <br><strong class="text-amber"><i class="fa-solid fa-shield-cat"></i> Read-Only Security:</strong> Spam Mail Detector only inspects email headers & body for spam classification. It <strong>never deletes, moves, or alters</strong> your emails.
                 </p>
 
-                <!-- Security Instructions Alert Box -->
-                <div class="security-instruction-box" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 1.1rem; font-size: 0.82rem;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #60a5fa; margin-bottom: 0.45rem;">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Gmail Security Requirements Alert
+                <!-- Security Instructions Cyber Alert Box -->
+                <div class="security-instruction-box cyber-alert">
+                    <div class="alert-title">
+                        <i class="fa-solid fa-triangle-exclamation"></i> GMAIL_SECURITY_REQUIREMENTS_ALERT
                     </div>
-                    <ol style="padding-left: 1.2rem; color: var(--text-muted); line-height: 1.5;">
-                        <li><strong>Step 1:</strong> Turn <strong>ON 2-Step Verification</strong> at <a href="https://myaccount.google.com/signinoptions/two-step-verification" target="_blank" style="color: #60a5fa; text-decoration: underline;">Google 2FA Settings</a>.</li>
-                        <li><strong>Step 2:</strong> Open <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color: #60a5fa; text-decoration: underline;">Google App Passwords</a> and generate a 16-character code.</li>
+                    <ol class="alert-steps">
+                        <li><strong>Step 1:</strong> Turn <strong>ON 2-Step Verification</strong> at <a href="https://myaccount.google.com/signinoptions/two-step-verification" target="_blank">Google 2FA Settings</a>.</li>
+                        <li><strong>Step 2:</strong> Open <a href="https://myaccount.google.com/apppasswords" target="_blank">Google App Passwords</a> and generate a 16-character code.</li>
                         <li><strong>Step 3:</strong> Paste the 16-character App Password into the field below.</li>
                     </ol>
                 </div>
 
-                <!-- Provider Presets -->
-                <div class="preset-buttons" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
-                    <button type="button" class="btn-xs active" onclick="selectProvider('gmail')"><i class="fa-brands fa-google"></i> Gmail</button>
-                    <button type="button" class="btn-xs" onclick="selectProvider('outlook')"><i class="fa-brands fa-microsoft"></i> Outlook / Hotmail</button>
-                    <button type="button" class="btn-xs" onclick="selectProvider('yahoo')"><i class="fa-brands fa-yahoo"></i> Yahoo</button>
-                    <button type="button" class="btn-xs" onclick="selectProvider('custom')">Custom IMAP</button>
+                <!-- Provider Preset Cyber Buttons -->
+                <div class="preset-buttons cyber-presets">
+                    <button type="button" class="btn-xs active" onclick="selectProvider('gmail')"><i class="fa-brands fa-google"></i> GMAIL.SSL</button>
+                    <button type="button" class="btn-xs" onclick="selectProvider('outlook')"><i class="fa-brands fa-microsoft"></i> OUTLOOK.IMAP</button>
+                    <button type="button" class="btn-xs" onclick="selectProvider('yahoo')"><i class="fa-brands fa-yahoo"></i> YAHOO.MAIL</button>
+                    <button type="button" class="btn-xs" onclick="selectProvider('custom')">CUSTOM.IMAP</button>
                 </div>
 
                 <form id="imapForm" onsubmit="submitIMAPConfig(event)">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>IMAP Host Server</label>
-                            <input type="text" id="imapHost" value="imap.gmail.com" required placeholder="imap.gmail.com">
+                            <label class="robotic-label">IMAP_HOST_SERVER</label>
+                            <input type="text" id="imapHost" class="cyber-input" value="imap.gmail.com" required placeholder="imap.gmail.com">
                         </div>
 
                         <div class="form-group">
-                            <label>Port</label>
-                            <input type="number" id="imapPort" value="993" required placeholder="993">
+                            <label class="robotic-label">SERVER_PORT</label>
+                            <input type="number" id="imapPort" class="cyber-input" value="993" required placeholder="993">
                         </div>
 
                         <div class="form-group full-width">
-                            <label>Email Address</label>
-                            <input type="email" id="emailUser" required placeholder="your_email@gmail.com">
+                            <label class="robotic-label">EMAIL_ADDRESS_USER</label>
+                            <input type="email" id="emailUser" class="cyber-input" required placeholder="your_email@gmail.com">
                         </div>
 
                         <div class="form-group full-width">
-                            <label>Google App Password / Account Password</label>
-                            <input type="password" id="emailPassword" required placeholder="•••• •••• •••• ••••">
+                            <label class="robotic-label">APP_PASSWORD_AUTH</label>
+                            <input type="password" id="emailPassword" class="cyber-input" required placeholder="•••• •••• •••• ••••">
                             <small class="help-text" id="passHelpText">
                                 <strong>For Gmail:</strong> Generate a 16-character <em>App Password</em> (requires 2-Step Verification) at:
                                 <a href="https://myaccount.google.com/apppasswords" target="_blank">Google Security -> App Passwords</a>.
@@ -271,7 +271,7 @@
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" onclick="closeIMAPModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="btnSaveIMAP">
+                        <button type="submit" class="btn btn-primary cyber-btn" id="btnSaveIMAP">
                             <i class="fa-solid fa-satellite-dish"></i> Connect & Scan Inbox
                         </button>
                     </div>
@@ -282,9 +282,9 @@
 
     <!-- Email Inspector Modal -->
     <div id="emailDetailModal" class="modal-overlay hidden">
-        <div class="modal-card modal-large">
+        <div class="modal-card modal-large cyber-modal">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-microchip"></i> Email Neural Inspector</h3>
+                <h3 class="robotic-heading"><i class="fa-solid fa-microchip"></i> [ EMAIL_NEURAL_INSPECTOR ]</h3>
                 <button class="btn-close" onclick="closeEmailModal()">&times;</button>
             </div>
             <div class="modal-body">
@@ -298,26 +298,26 @@
 
                 <div class="inspector-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 10px;">
                     <div>
-                        <span style="font-size: 0.75rem; color: var(--text-dim); display: block;">CLASSIFICATION</span>
+                        <span class="robotic-label" style="font-size: 0.72rem; display: block;">CLASSIFICATION</span>
                         <strong id="inspectLabel">SPAM</strong>
                     </div>
                     <div>
-                        <span style="font-size: 0.75rem; color: var(--text-dim); display: block;">CONFIDENCE</span>
+                        <span class="robotic-label" style="font-size: 0.72rem; display: block;">CONFIDENCE</span>
                         <strong id="inspectConfidence">99.5%</strong>
                     </div>
                     <div>
-                        <span style="font-size: 0.75rem; color: var(--text-dim); display: block;">SPAM SCORE</span>
+                        <span class="robotic-label" style="font-size: 0.72rem; display: block;">SPAM SCORE</span>
                         <strong id="inspectScore" class="mono">0.9950</strong>
                     </div>
                 </div>
 
                 <div class="inspector-triggers" style="margin-bottom: 1rem;">
-                    <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">DETECTED RISK TRIGGERS</span>
+                    <span class="robotic-label" style="display: block; margin-bottom: 0.4rem;">DETECTED_RISK_TRIGGERS</span>
                     <div id="inspectTriggersList" style="display: flex; gap: 0.4rem; flex-wrap: wrap;"></div>
                 </div>
 
                 <div class="inspector-body" style="background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-glass); max-height: 220px; overflow-y: auto;">
-                    <span style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 0.5rem;">EMAIL BODY CONTENT</span>
+                    <span class="robotic-label" style="font-size: 0.72rem; display: block; margin-bottom: 0.5rem;">EMAIL_BODY_CONTENT</span>
                     <p id="inspectBodyText" style="font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap;"></p>
                 </div>
             </div>
@@ -329,9 +329,9 @@
 
     <!-- Terms & Conditions Modal -->
     <div id="termsModal" class="modal-overlay hidden">
-        <div class="modal-card modal-large">
+        <div class="modal-card modal-large cyber-modal">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-scale-balanced"></i> Terms & Conditions — Spam Mail Detector</h3>
+                <h3 class="robotic-heading"><i class="fa-solid fa-scale-balanced"></i> [ TERMS_AND_CONDITIONS ]</h3>
                 <button class="btn-close" onclick="closeTermsModal()">&times;</button>
             </div>
             <div class="modal-body" style="max-height: 420px; overflow-y: auto; padding-right: 0.5rem; line-height: 1.6; font-size: 0.88rem; color: var(--text-muted);">
@@ -353,7 +353,7 @@
                 <p>Spam Mail Detector is an Artificial Intelligence classification tool designed for educational and analytical purposes. While our Multi-Layer Perceptron (ANN) model achieves high accuracy, no AI filter can guarantee 100% classification error immunity. The developers are not liable for misclassified messages.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" onclick="closeTermsModal()">I Understand & Accept</button>
+                <button type="button" class="btn btn-primary cyber-btn" onclick="closeTermsModal()">I Understand & Accept</button>
             </div>
         </div>
     </div>
