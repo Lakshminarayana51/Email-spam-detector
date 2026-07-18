@@ -68,11 +68,12 @@ async function fetchSystemStatus() {
         const imapText = document.getElementById('imapStatusText');
         const imapUserText = document.getElementById('imapUserText');
         const imapBtnText = document.getElementById('imapBtnText');
+        const btnDisconnect = document.getElementById('btnDisconnect');
 
         if (imapDot && imapText) {
             if (data.live_monitoring_enabled) {
                 imapDot.className = 'status-indicator active';
-                imapText.textContent = data.imap_status || 'Active Scanning';
+                imapText.textContent = data.imap_status || 'Session Active';
             } else {
                 imapDot.className = 'status-indicator';
                 imapText.textContent = data.imap_status || 'Disconnected';
@@ -87,8 +88,35 @@ async function fetchSystemStatus() {
             imapBtnText.textContent = data.live_monitoring_enabled ? 'Connected' : 'Connect Real Inbox';
         }
 
+        if (btnDisconnect) {
+            if (data.live_monitoring_enabled) {
+                btnDisconnect.classList.remove('hidden');
+            } else {
+                btnDisconnect.classList.add('hidden');
+            }
+        }
+
     } catch (err) {
         console.error('Error fetching status:', err);
+    }
+}
+
+// Disconnect active session
+async function disconnectSession() {
+    if (!confirm('Are you sure you want to disconnect and clear your session email details?')) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/disconnect', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            fetchSystemStatus();
+            fetchStats();
+            fetchEmailFeed();
+        }
+    } catch (err) {
+        console.error('Error disconnecting session:', err);
     }
 }
 
@@ -135,7 +163,7 @@ async function fetchEmailFeed() {
                     <td colspan="7">
                         <div class="empty-state">
                             <i class="fa-solid fa-envelope-open-text"></i>
-                            <p>No emails found for filter "${currentFilter}".</p>
+                            <p>No emails analyzed in this session.</p>
                             <span class="sub-state">Click <strong>"Connect Real Inbox"</strong> or <strong>"Seed Demo Data"</strong> to scan emails for spam.</span>
                         </div>
                     </td>
@@ -300,14 +328,14 @@ async function submitIMAPConfig(event) {
 
         if (res.ok && data.success) {
             msgDiv.className = 'modal-message success';
-            msgDiv.textContent = data.message + ' — Scanning inbox...';
+            msgDiv.textContent = data.message;
             msgDiv.classList.remove('hidden');
             setTimeout(() => {
                 closeIMAPModal();
                 fetchSystemStatus();
                 fetchStats();
                 fetchEmailFeed();
-            }, 2000);
+            }, 1500);
         } else {
             msgDiv.className = 'modal-message error';
             msgDiv.textContent = data.error || 'Failed to connect to IMAP server. Verify App Password.';
