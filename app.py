@@ -3,6 +3,7 @@ import time
 import json
 import csv
 import io
+import uuid
 import imaplib
 import email
 from email.header import decode_header
@@ -17,51 +18,55 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'sentrymail_super_secret_session_key_2026')
-app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minute session lifetime
 
-# Global fallback store for demo seeding only
-DEMO_STORE = []
+# SERVER-SIDE SESSION MEMORY STORE
+# Key: session_id (UUID string), Value: { "emails": [...], "stats": {...}, "user": "..." }
+SESSION_STORE: Dict[str, Dict[str, Any]] = {}
 
-# Active IMAP monitors per session user
-ACTIVE_MONITORS = {}
+# Active IMAP background monitors per session
+ACTIVE_MONITORS: Dict[str, IMAPEmailMonitor] = {}
 
-def get_session_data():
-    """Helper to initialize or retrieve session-isolated email store and stats."""
-    if 'emails' not in session:
-        session['emails'] = []
-    if 'stats' not in session:
-        session['stats'] = {"total_analyzed": 0, "total_spam": 0, "total_ham": 0}
-    if 'connected_user' not in session:
-        session['connected_user'] = ""
-    return session['emails'], session['stats'], session['connected_user']
+def get_or_create_sid() -> str:
+    """Ensures each browser gets a unique session ID cookie."""
+    if 'sid' not in session:
+        session['sid'] = str(uuid.uuid4())
+        session.permanent = True
+    sid = session['sid']
+    if sid not in SESSION_STORE:
+        SESSION_STORE[sid] = {
+            "emails": [],
+            "stats": {"total_analyzed": 0, "total_spam": 0, "total_ham": 0},
+            "user": ""
+        }
+    return sid
 
-def save_session_email(scored_email: Dict[str, Any]):
-    """Saves a scored email into the active user's isolated session store."""
-    emails, stats, user = get_session_data()
-    
-    # Avoid duplicate IDs in session
+def save_session_email(sid: str, scored_email: Dict[str, Any]):
+    """Saves a scored email into the server-side memory store for the active session."""
+    store = SESSION_STORE.get(sid)
+    if not store:
+        return
+
+    emails = store["emails"]
+    stats = store["stats"]
+
+    # Avoid duplicate IDs
     for item in emails:
         if item.get('id') == scored_email.get('id'):
             return
 
     emails.insert(0, scored_email)
-    # Cap session memory to latest 100 items
-    if len(emails) > 100:
-        session['emails'] = emails[:100]
-    else:
-        session['emails'] = emails
+    # Cap session list to latest 200 items
+    store["emails"] = emails[:200]
 
     stats["total_analyzed"] += 1
     if scored_email.get("is_spam"):
         stats["total_spam"] += 1
     else:
         stats["total_ham"] += 1
-    session['stats'] = stats
-    session.modified = True
 
-def scan_inbox_synchronously(host: str, port: int, user: str, password: str, limit: int = 25) -> List[Dict[str, Any]]:
+def scan_inbox_synchronously(sid: str, host: str, port: int, user: str, password: str, limit: int = 30) -> List[Dict[str, Any]]:
     """
-    Scans real IMAP mailbox synchronously and returns isolated scored emails.
+    Scans real IMAP mailbox synchronously and populates server-side session memory.
     """
     clean_pass = password.replace(" ", "").strip()
     imap_conn = imaplib.IMAP4_SSL(host, port)
@@ -156,7 +161,7 @@ def scan_inbox_synchronously(host: str, port: int, user: str, password: str, lim
         }
 
         scored_list.append(scored)
-        save_session_email(scored)
+        save_session_email(sid, scored)
 
     try:
         imap_conn.logout()
@@ -170,29 +175,33 @@ def scan_inbox_synchronously(host: str, port: int, user: str, password: str, lim
 @app.route('/')
 def dashboard():
     """Main dashboard view."""
+    get_or_create_sid()
     return render_template('index.html')
 
 @app.route('/test')
 def test_page():
     """Manual email testing page."""
+    get_or_create_sid()
     return render_template('test_email.html')
 
-# --- REST API ENDPOINTS (SESSION ISOLATED) ---
+# --- REST API ENDPOINTS ---
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-    """Returns model status and active session user status."""
-    model_ready = predictor.is_ready()
-    emails, stats, user = get_session_data()
+    """Returns model status and session status."""
+    sid = get_or_create_sid()
+    store = SESSION_STORE[sid]
+    user = store["user"]
+    total = store["stats"]["total_analyzed"]
     
-    is_active = bool(user or stats["total_analyzed"] > 0)
+    is_active = bool(user or total > 0)
     
     return jsonify({
-        "model_ready": model_ready,
+        "model_ready": predictor.is_ready(),
         "live_monitoring_enabled": is_active,
         "imap_host": "imap.gmail.com" if user else "Not Configured",
         "imap_user": user if user else ("Active Session" if is_active else "Not Configured"),
-        "imap_status": f"Active Session ({user})" if user else ("Session Active" if is_active else "Disconnected"),
+        "imap_status": f"Connected ({user})" if user else ("Active Session" if is_active else "Disconnected"),
         "imap_error": None
     })
 
@@ -211,7 +220,8 @@ def get_metrics():
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     """Returns session-isolated aggregated detection statistics."""
-    _, stats, _ = get_session_data()
+    sid = get_or_create_sid()
+    stats = SESSION_STORE[sid]["stats"]
     total = stats["total_analyzed"]
     spam = stats["total_spam"]
     ham = stats["total_ham"]
@@ -227,10 +237,11 @@ def get_stats():
 @app.route('/api/emails', methods=['GET'])
 def get_emails():
     """Returns session-isolated classified email logs."""
+    sid = get_or_create_sid()
     filter_type = request.args.get('filter', 'all').lower()
     limit = int(request.args.get('limit', 50))
 
-    emails, _, _ = get_session_data()
+    emails = SESSION_STORE[sid]["emails"]
     
     if filter_type == 'spam':
         emails = [e for e in emails if e.get('is_spam')]
@@ -245,6 +256,7 @@ def get_emails():
 @app.route('/api/test', methods=['POST'])
 def test_email():
     """Runs inference on manually submitted subject + body."""
+    sid = get_or_create_sid()
     data = request.json or {}
     subject = data.get('subject', '').strip()
     body = data.get('body', '').strip()
@@ -269,7 +281,7 @@ def test_email():
         "timestamp": time.strftime("%H:%M:%S")
     }
 
-    save_session_email(scored_email)
+    save_session_email(sid, scored_email)
 
     return jsonify({
         "success": True,
@@ -279,7 +291,8 @@ def test_email():
 
 @app.route('/api/seed_demo', methods=['POST'])
 def seed_demo():
-    """Seeds realistic demo emails into the active browser session."""
+    """Seeds realistic demo emails into the active browser session memory."""
+    sid = get_or_create_sid()
     demo_samples = [
         {
             "subject": "URGENT: Verify your bank account access now",
@@ -330,10 +343,10 @@ def seed_demo():
             "triggers": pred.get("triggers", []),
             "timestamp": time.strftime("%H:%M:%S")
         }
-        save_session_email(scored)
+        save_session_email(sid, scored)
         count_added += 1
 
-    _, stats, _ = get_session_data()
+    stats = SESSION_STORE[sid]["stats"]
     return jsonify({
         "success": True,
         "message": f"Seeded {count_added} demo emails into session.",
@@ -342,20 +355,34 @@ def seed_demo():
 
 @app.route('/api/config/imap', methods=['POST'])
 def update_imap_config():
-    """Connects user mailbox, saves to session, and performs instant isolated inbox scan."""
+    """Connects user mailbox, saves to server-side session memory, and scans inbox."""
+    sid = get_or_create_sid()
     data = request.json or {}
     host = data.get('host', 'imap.gmail.com').strip()
     port = int(data.get('port', 993))
     user = data.get('user', '').strip()
     password = data.get('password', '').replace(" ", "").strip()
+    mailbox = data.get('mailbox', 'INBOX').strip()
 
     if not user or not password:
         return jsonify({"error": "Email user and App Password are required."}), 400
 
     try:
-        scored_items = scan_inbox_synchronously(host, port, user, password, limit=25)
-        session['connected_user'] = user
-        session.modified = True
+        scored_items = scan_inbox_synchronously(sid, host, port, user, password, limit=30)
+        SESSION_STORE[sid]["user"] = user
+
+        # Start persistent background monitor for local server if active
+        if sid in ACTIVE_MONITORS:
+            ACTIVE_MONITORS[sid].stop()
+        
+        cb = lambda scored: save_session_email(sid, scored)
+        monitor = IMAPEmailMonitor(callback=cb)
+        monitor.configure(host, port, user, password, mailbox)
+        try:
+            monitor.start()
+            ACTIVE_MONITORS[sid] = monitor
+        except Exception:
+            pass
 
         return jsonify({
             "success": True,
@@ -372,7 +399,22 @@ def update_imap_config():
 
 @app.route('/api/disconnect', methods=['POST'])
 def disconnect_session():
-    """Clears user session & resets mailbox dashboard completely."""
+    """Clears user session memory & stops active background scanner."""
+    sid = get_or_create_sid()
+    if sid in ACTIVE_MONITORS:
+        try:
+            ACTIVE_MONITORS[sid].stop()
+            del ACTIVE_MONITORS[sid]
+        except Exception:
+            pass
+
+    if sid in SESSION_STORE:
+        SESSION_STORE[sid] = {
+            "emails": [],
+            "stats": {"total_analyzed": 0, "total_spam": 0, "total_ham": 0},
+            "user": ""
+        }
+
     session.clear()
     return jsonify({
         "success": True,
@@ -382,7 +424,8 @@ def disconnect_session():
 @app.route('/api/export', methods=['GET'])
 def export_csv():
     """Export currently stored session emails as downloadable CSV."""
-    emails, _, _ = get_session_data()
+    sid = get_or_create_sid()
+    emails = SESSION_STORE[sid]["emails"]
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['ID', 'Timestamp', 'Subject', 'Sender', 'Source', 'Label', 'Is_Spam', 'Confidence', 'Spam_Score', 'Triggers', 'Body'])
@@ -408,7 +451,7 @@ def export_csv():
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("SentryMail Session-Isolated Web Application Launching")
+    print("SentryMail Server-Side Session Memory Web Application Launching")
     print("Dashboard available at: http://127.0.0.1:5000")
     print("=" * 60)
     app.run(host='0.0.0.0', port=5000, debug=False)
