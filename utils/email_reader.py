@@ -39,14 +39,12 @@ class IMAPEmailMonitor:
         self.host = host.strip()
         self.port = port
         self.user = user.strip()
-        
-        # Clean password (strip spaces if Google App Password)
         clean_pass = password.replace(" ", "").strip()
         self.password = clean_pass
             
         self.seen_uids.clear()
         self.initial_scan_done = False
-        print(f"[IMAP Monitor Configured] User: '{self.user}', Host: '{self.host}:{self.port}', Password length: {len(self.password)}")
+        print(f"[IMAP Monitor Configured] User: '{self.user}', Host: '{self.host}:{self.port}'")
 
     def start(self):
         """Starts background monitoring loop in daemon thread."""
@@ -55,7 +53,6 @@ class IMAPEmailMonitor:
             
         if not self.user or not self.password:
             self.last_status = "Disabled (Credentials missing)"
-            print("[IMAP Monitor] Credentials missing; live IMAP monitoring disabled.")
             return
 
         self.is_running = True
@@ -88,50 +85,56 @@ class IMAPEmailMonitor:
             return str(header_value)
 
     def _extract_body(self, msg: email.message.Message) -> str:
-        """Extracts plain text body or falls back to HTML text."""
+        """Extracts text content robustly from any MIME structure."""
         body_text = ""
         html_text = ""
 
-        if msg.is_multipart():
-            for part in msg.walk():
-                content_type = part.get_content_type()
-                content_disposition = str(part.get("Content-Disposition"))
+        try:
+            if msg.is_multipart():
+                for part in msg.walk():
+                    content_type = part.get_content_type()
+                    content_disposition = str(part.get("Content-Disposition", ""))
 
-                if "attachment" in content_disposition:
-                    continue
-
-                try:
-                    payload = part.get_payload(decode=True)
-                    if not payload:
+                    if "attachment" in content_disposition:
                         continue
-                    charset = part.get_content_charset() or 'utf-8'
-                    text = payload.decode(charset, errors='replace')
 
-                    if content_type == "text/plain":
-                        body_text += text + "\n"
-                    elif content_type == "text/html":
-                        html_text += text + "\n"
-                except Exception:
-                    pass
-        else:
-            try:
+                    try:
+                        payload = part.get_payload(decode=True)
+                        if not payload:
+                            continue
+                        charset = part.get_content_charset() or 'utf-8'
+                        text = payload.decode(charset, errors='replace')
+
+                        if content_type == "text/plain":
+                            body_text += text + "\n"
+                        elif content_type == "text/html":
+                            html_text += text + "\n"
+                    except Exception:
+                        pass
+            else:
                 payload = msg.get_payload(decode=True)
                 if payload:
                     charset = msg.get_content_charset() or 'utf-8'
                     body_text = payload.decode(charset, errors='replace')
-            except Exception:
-                pass
+        except Exception:
+            pass
 
+        # Clean HTML fallback
         final_body = body_text.strip() if body_text.strip() else html_text.strip()
+        if not final_body and msg.get_payload():
+            final_body = str(msg.get_payload())
+
         return final_body
 
     def _process_message(self, imap_conn, uid: bytes) -> Optional[Dict[str, Any]]:
         """Fetches and scores a single email by UID."""
         uid_str = uid.decode('utf-8') if isinstance(uid, bytes) else str(uid)
-        if uid_str in self.seen_uids:
+        unique_key = f"{self.user}_{uid_str}"
+        
+        if unique_key in self.seen_uids:
             return None
 
-        self.seen_uids.add(uid_str)
+        self.seen_uids.add(unique_key)
 
         res, data = imap_conn.fetch(uid, '(RFC822)')
         if res != 'OK' or not data or not data[0]:
@@ -151,7 +154,7 @@ class IMAPEmailMonitor:
         result = predictor.predict(subject, body)
 
         scored_email = {
-            "id": f"mail_{uid_str}",
+            "id": f"mail_{unique_key}",
             "subject": subject or "(No Subject)",
             "sender": sender,
             "date": date_str or time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -165,7 +168,7 @@ class IMAPEmailMonitor:
             "timestamp": time.strftime("%H:%M:%S")
         }
 
-        print(f"[IMAP Monitor] Scored mail from '{sender}': {result['label']} (Score: {result['spam_score']})")
+        print(f"[IMAP Monitor] Scored mail #{uid_str} from '{sender}': {result['label']} (Score: {result['spam_score']})")
         return scored_email
 
     def _monitor_loop(self):
@@ -175,11 +178,9 @@ class IMAPEmailMonitor:
             imap_conn = None
             try:
                 self.last_status = f"Connecting to {self.host}..."
-                print(f"[IMAP Monitor] Connecting to {self.host}:{self.port} as {self.user}...")
                 imap_conn = imaplib.IMAP4_SSL(self.host, self.port)
                 imap_conn.login(self.user, self.password)
                 
-                # Select mailbox in READ-ONLY mode
                 status, _ = imap_conn.select(self.mailbox, readonly=True)
                 if status != 'OK':
                     raise Exception(f"Failed to select mailbox {self.mailbox}")
@@ -188,13 +189,13 @@ class IMAPEmailMonitor:
                 self.last_error = None
                 backoff = 2
 
-                # Initial Inbox Scan (Fetch recent 25 messages in inbox)
+                # Initial Inbox Scan (Fetch recent 40 messages in inbox)
                 if not self.initial_scan_done:
                     self.last_status = "Scanning Inbox for Spam..."
                     status, messages = imap_conn.search(None, 'ALL')
                     if status == 'OK' and messages[0]:
                         uids = messages[0].split()
-                        recent_uids = uids[-25:]
+                        recent_uids = uids[-40:]  # Scan latest 40 emails
                         print(f"[IMAP Monitor] Initial inbox scan of latest {len(recent_uids)} emails...")
                         for uid in reversed(recent_uids):
                             scored = self._process_message(imap_conn, uid)
@@ -217,10 +218,9 @@ class IMAPEmailMonitor:
 
             except Exception as e:
                 err_msg = str(e)
-                print(f"[IMAP Monitor Auth Error] {err_msg}")
                 if "AUTHENTICATIONFAILED" in err_msg or "Invalid credentials" in err_msg:
-                    self.last_error = "Gmail Auth Failed: Please check 1) Your email address match, 2) Enable IMAP in Gmail Settings, 3) Verify App Password."
-                    self.last_status = "Auth Failed (Check IMAP Settings)"
+                    self.last_error = "Gmail Auth Failed: Please check Email Address and 16-character App Password."
+                    self.last_status = "Auth Failed (Check App Password)"
                     self.is_running = False
                     break
                 else:

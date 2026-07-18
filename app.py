@@ -4,6 +4,8 @@ import json
 import csv
 import io
 import imaplib
+import email
+from email.header import decode_header
 from collections import deque
 from typing import Dict, Any, List
 from dotenv import load_dotenv
@@ -40,16 +42,16 @@ def on_email_received(scored_email: Dict[str, Any]):
     else:
         STATS["total_ham"] += 1
 
-# Initialize IMAP Monitor daemon (for local 24/7 background scanning)
+# Initialize IMAP Monitor daemon
 imap_monitor = IMAPEmailMonitor(callback=on_email_received)
 
 # Boot daemon if credentials are set in .env
 if os.getenv('EMAIL_USER') and os.getenv('EMAIL_PASSWORD'):
     imap_monitor.start()
 
-def scan_inbox_synchronously(host: str, port: int, user: str, password: str, limit: int = 20) -> List[Dict[str, Any]]:
+def scan_inbox_synchronously(host: str, port: int, user: str, password: str, limit: int = 30) -> List[Dict[str, Any]]:
     """
-    Scans real IMAP mailbox synchronously for Serverless environments (e.g. Vercel).
+    Scans real IMAP mailbox synchronously for all emails in inbox.
     Fetches and scores the latest N emails directly within the request cycle.
     """
     clean_pass = password.replace(" ", "").strip()
@@ -72,6 +74,8 @@ def scan_inbox_synchronously(host: str, port: int, user: str, password: str, lim
     scored_list = []
     for uid in reversed(recent_uids):
         uid_str = uid.decode('utf-8') if isinstance(uid, bytes) else str(uid)
+        unique_id = f"mail_{user}_{uid_str}"
+
         res, data = imap_conn.fetch(uid, '(RFC822)')
         if res != 'OK' or not data or not data[0]:
             continue
@@ -80,8 +84,6 @@ def scan_inbox_synchronously(host: str, port: int, user: str, password: str, lim
         if not isinstance(raw_email, bytes):
             continue
 
-        import email
-        from email.header import decode_header
         msg = email.message_from_bytes(raw_email)
 
         # Decode subject
@@ -101,24 +103,38 @@ def scan_inbox_synchronously(host: str, port: int, user: str, password: str, lim
         sender = str(msg.get('From', 'Unknown Sender'))
 
         # Body
-        body = ""
-        if msg.is_multipart():
-            for part in msg.walk():
-                if "attachment" in str(part.get("Content-Disposition")):
-                    continue
-                if part.get_content_type() == "text/plain":
+        body_text = ""
+        html_text = ""
+        try:
+            if msg.is_multipart():
+                for part in msg.walk():
+                    if "attachment" in str(part.get("Content-Disposition", "")):
+                        continue
+                    c_type = part.get_content_type()
                     payload = part.get_payload(decode=True)
                     if payload:
-                        body += payload.decode(part.get_content_charset() or 'utf-8', errors='replace')
-        else:
-            payload = msg.get_payload(decode=True)
-            if payload:
-                body = payload.decode(msg.get_content_charset() or 'utf-8', errors='replace')
+                        charset = part.get_content_charset() or 'utf-8'
+                        txt = payload.decode(charset, errors='replace')
+                        if c_type == "text/plain":
+                            body_text += txt + "\n"
+                        elif c_type == "text/html":
+                            html_text += txt + "\n"
+            else:
+                payload = msg.get_payload(decode=True)
+                if payload:
+                    charset = msg.get_content_charset() or 'utf-8'
+                    body_text = payload.decode(charset, errors='replace')
+        except Exception:
+            pass
+
+        body = body_text.strip() if body_text.strip() else html_text.strip()
+        if not body and msg.get_payload():
+            body = str(msg.get_payload())
 
         pred = predictor.predict(subject, body)
 
         scored = {
-            "id": f"mail_{uid_str}",
+            "id": unique_id,
             "subject": subject or "(No Subject)",
             "sender": sender,
             "date": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -335,10 +351,8 @@ def update_imap_config():
         return jsonify({"error": "Email user and App Password are required."}), 400
 
     try:
-        # Perform synchronous on-demand scan for serverless environments (Vercel)
-        scored_items = scan_inbox_synchronously(host, port, user, password, limit=20)
+        scored_items = scan_inbox_synchronously(host, port, user, password, limit=30)
         
-        # Configure background daemon for localhost persistence
         imap_monitor.stop()
         imap_monitor.configure(host, port, user, password, mailbox)
         try:
