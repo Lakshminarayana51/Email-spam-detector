@@ -443,9 +443,12 @@ def export_csv():
     response.headers["Content-Disposition"] = "attachment; filename=spam_mail_detector_export.csv"
     return response
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+
     print("=" * 60)
     print("Spam Mail Detector AI Web Application Launching")
-    print("Dashboard available at: http://127.0.0.1:5000")
+    print(f"Listening on PORT {port}")
     print("=" * 60)
-    app.run(host='0.0.0.0', port=5000, debug=False)
+
+    app.run(host="0.0.0.0", port=port, debug=False)
