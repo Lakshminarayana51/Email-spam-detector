@@ -177,6 +177,18 @@
                     <br><strong class="text-amber"><i class="fa-solid fa-shield-cat"></i> Read-Only Security:</strong> SentryMail only inspects email headers & body for spam classification. It <strong>never deletes, moves, or alters</strong> your emails.
                 </p>
 
+                <!-- Security Instructions Alert Box -->
+                <div class="security-instruction-box" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 1.1rem; font-size: 0.82rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #60a5fa; margin-bottom: 0.45rem;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Gmail Security Requirements Alert
+                    </div>
+                    <ol style="padding-left: 1.2rem; color: var(--text-muted); line-height: 1.5;">
+                        <li><strong>Step 1:</strong> Turn <strong>ON 2-Step Verification</strong> at <a href="https://myaccount.google.com/signinoptions/two-step-verification" target="_blank" style="color: #60a5fa; text-decoration: underline;">Google 2FA Settings</a>.</li>
+                        <li><strong>Step 2:</strong> Open <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color: #60a5fa; text-decoration: underline;">Google App Passwords</a> and generate a 16-character code.</li>
+                        <li><strong>Step 3:</strong> Paste the 16-character App Password into the field below.</li>
+                    </ol>
+                </div>
+
                 <!-- Provider Presets -->
                 <div class="preset-buttons" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
                     <button type="button" class="btn-xs active" onclick="selectProvider('gmail')"><i class="fa-brands fa-google"></i> Gmail</button>
@@ -203,7 +215,7 @@
                         </div>
 
                         <div class="form-group full-width">
-                            <label>Google App Password / Mail Password</label>
+                            <label>Google App Password / Account Password</label>
                             <input type="password" id="emailPassword" required placeholder="•••• •••• •••• ••••">
                             <small class="help-text" id="passHelpText">
                                 <strong>For Gmail:</strong> Generate a 16-character <em>App Password</em> (requires 2-Step Verification) at:
